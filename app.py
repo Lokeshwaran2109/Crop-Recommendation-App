@@ -1,38 +1,50 @@
 import streamlit as st
 import numpy as np
 import pickle
+import os
 
 # -------------------------------
-# Load saved model and encoders
+# Page Config (must be first)
 # -------------------------------
+st.set_page_config(page_title="Crop Recommendation", layout="centered")
 
-st.cache_resource()
+# -------------------------------
+# Safe file loader with cache
+# -------------------------------
+@st.cache_resource
 def load_pickle(file_path):
     with open(file_path, "rb") as file:
         return pickle.load(file)
 
-model = load_pickle("crop_model.pkl")               # Trained ML model
-label_encoder = load_pickle("label_encoder.pkl")    # Encoder for crop labels
+# -------------------------------
+# Correct file paths (IMPORTANT FIX)
+# -------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model_path = os.path.join(BASE_DIR, "crop_model.pkl")
+encoder_path = os.path.join(BASE_DIR, "label_encoder.pkl")
+
+model = load_pickle(model_path)
+label_encoder = load_pickle(encoder_path)
 
 # Load scaler (optional)
-try:
-    scaler = load_pickle("scaler.pkl")
+scaler = None
+use_scaler = False
+
+scaler_path = os.path.join(BASE_DIR, "scaler.pkl")
+if os.path.exists(scaler_path):
+    scaler = load_pickle(scaler_path)
     use_scaler = True
-except:
-    use_scaler = False
 
 # -------------------------------
-# App UI
+# UI Header
 # -------------------------------
-
-st.set_page_config(page_title="Crop Recommendation", layout="centered")
-st.title(" Intelligent Crop Recommendation System")
-st.markdown(" Enter the soil nutrients and climate details to get the most suitable crop ")
+st.title("🌾 Intelligent Crop Recommendation System")
+st.markdown("Enter soil nutrients and climate conditions to get the best suitable crop")
 
 # -------------------------------
-# User Input Section
+# Input Section
 # -------------------------------
-
 with st.form("crop_form"):
     col1, col2 = st.columns(2)
 
@@ -47,12 +59,11 @@ with st.form("crop_form"):
         humidity = st.slider("Humidity (%)", 10, 100, 65)
         rainfall = st.slider("Rainfall (mm)", 20, 300, 100)
 
-    submitted = st.form_submit_button(" Recommend Crop")
+    submitted = st.form_submit_button("🌱 Recommend Crop")
 
 # -------------------------------
 # Prediction Logic
 # -------------------------------
-
 if submitted:
     input_data = np.array([[N, P, K, temperature, humidity, ph, rainfall]])
 
@@ -62,11 +73,10 @@ if submitted:
     prediction = model.predict(input_data)
     predicted_crop = label_encoder.inverse_transform(prediction)[0]
 
-    st.success(f"🌱 **Recommended Crop:** `{predicted_crop.capitalize()}`")
+    st.success(f"🌾 Recommended Crop: **{predicted_crop.capitalize()}**")
 
 # -------------------------------
-# Footer Section
+# Footer
 # -------------------------------
-
 st.markdown("---")
-st.markdown("Made by Lokeshwaran  |  Powered by **Machine Learning + Streamlit")
+st.markdown("Made by Lokeshwaran | Powered by Machine Learning + Streamlit")
